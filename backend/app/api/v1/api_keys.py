@@ -89,12 +89,15 @@ async def create_api_key(
     key_prefix = key_value[:20]
     key_hash_value = hash_key(key_value)
     
+    user_id = data.get("user_id") or data.get("userId")
+    if not user_id:
+        raise HTTPException(status_code=422, detail="userId is required")
     new_key = APIKey(
         label=data.get("label", "New Key"),
-        user_id=data.get("user_id"),
+        user_id=user_id,
         key_prefix=key_prefix,
         key_hash=key_hash_value,
-        rate_limit=data.get("rate_limit", 1000),
+        rate_limit=data.get("rate_limit") or data.get("rateLimit", 1000),
         is_active=True,
     )
     db.add(new_key)
@@ -105,6 +108,29 @@ async def create_api_key(
         "apiKey": key_value,
         "apiKeyId": new_key.id,
     }
+
+
+@router.put("/{key_id}")
+async def update_api_key(
+    key_id: str,
+    data: dict,
+    db: Session = Depends(get_db),
+    current_admin = Depends(get_current_admin),
+):
+    key = db.query(APIKey).filter(APIKey.id == key_id).first()
+    if not key:
+        raise HTTPException(status_code=404, detail="API Key not found")
+    if data.get("label"):
+        key.label = data["label"]
+    if data.get("rate_limit") is not None:
+        key.rate_limit = data["rate_limit"]
+    elif data.get("rateLimit") is not None:
+        key.rate_limit = data["rateLimit"]
+    if data.get("is_active") is not None:
+        key.is_active = data["is_active"]
+    db.commit()
+    db.refresh(key)
+    return {"message": "API Key updated"}
 
 
 @router.delete("/{key_id}")

@@ -1,13 +1,11 @@
 import { Outlet, NavLink } from 'react-router-dom'
 import { 
-  Users, Globe, Key, BarChart3, Settings, Bot, Search, Bell, Menu, TrendingUp 
+  Users, BarChart3, Settings, Bot, Search, Bell, Menu, TrendingUp 
 } from 'lucide-react'
 import { useState } from 'react'
 
 const navItems = [
-  { path: '/users', icon: Users, label: 'Users' },
-  { path: '/websites', icon: Globe, label: 'Websites' },
-  { path: '/api-keys', icon: Key, label: 'API Keys' },
+  { path: '/management', icon: Users, label: 'Management' },
   { path: '/results', icon: BarChart3, label: 'Results' },
   { path: '/backend', icon: Settings, label: 'Backend' },
   { path: '/ai-logs', icon: Bot, label: 'AI Logs' },

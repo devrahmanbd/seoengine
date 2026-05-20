@@ -16,11 +16,12 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379"
 
     # API
-    api_host: str = "0.0.0.0"
+    api_host: str = "127.0.0.1"
     api_port: int = 8000
 
     # Security
     secret_key: str = "your-secret-key-change-in-production"
+    client_secret: str = ""
 
     # Environment
     environment: str = "production"

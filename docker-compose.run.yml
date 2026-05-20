@@ -33,8 +33,24 @@ services:
       REDIS_URL: redis://redis:6379
       SECRET_KEY: ${SECRET_KEY:-zenseo-secret-key-change-in-production}
       ENVIRONMENT: ${ENVIRONMENT:-production}
+      ML_API_KEY: ${ML_API_KEY:-ml-secret-key-change-me}
+      ML_SERVICE_URL: http://ml-service:8000
     ports:
       - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ml-service:
+    platform: linux/amd64
+    image: ghcr.io/devrahmanbd/seoengine-ml-service:latest
+    container_name: zenseo-ml
+    environment:
+      DATABASE_URL: postgresql://rahman:zenseo123@postgres:5432/zenseo
+      ML_API_KEY: ${ML_API_KEY:-ml-secret-key-change-me}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8001:8000"
     depends_on:
       postgres:
         condition: service_healthy

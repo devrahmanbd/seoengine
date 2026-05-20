@@ -27,6 +27,7 @@ echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_USER" --password-stdin
 echo "==> Pulling images..."
 docker pull "ghcr.io/$GITHUB_USER/$REPO-backend:$TAG"
 docker pull "ghcr.io/$GITHUB_USER/$REPO-frontend:$TAG"
+docker pull "ghcr.io/$GITHUB_USER/$REPO-ml-service:$TAG"
 
 echo "==> Creating data directory..."
 mkdir -p data
@@ -80,6 +81,24 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    restart: unless-stopped
+
+  ml-service:
+    image: ghcr.io/$GITHUB_USER/$REPO-ml-service:$TAG
+    container_name: zenseo-ml
+    environment:
+      DATABASE_URL: postgresql://rahman:zenseo123@postgres:5432/zenseo
+      ML_API_KEY: $ML_API_KEY
+      LOG_LEVEL: INFO
+    ports:
+      - "127.0.0.1:8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 4G
     restart: unless-stopped
 
   frontend:

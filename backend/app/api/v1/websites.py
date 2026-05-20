@@ -78,6 +78,67 @@ async def get_website(
     }
 
 
+@router.post("")
+async def create_website(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_admin = Depends(get_current_admin),
+):
+    user_id = data.get("user_id") or data.get("userId")
+    if not user_id:
+        raise HTTPException(status_code=422, detail="userId is required")
+    site = Website(
+        user_id=user_id,
+        url=data.get("url"),
+        name=data.get("name") or data.get("url") or "New Website",
+        platform=data.get("platform", "wordpress"),
+        status=data.get("status", "connected"),
+    )
+    db.add(site)
+    db.commit()
+    db.refresh(site)
+    return {
+        "id": site.id,
+        "name": site.name,
+        "url": site.url,
+        "userId": site.user_id,
+        "platform": site.platform,
+        "status": site.status,
+    }
+
+
+@router.put("/{website_id}")
+async def update_website(
+    website_id: str,
+    data: dict,
+    db: Session = Depends(get_db),
+    current_admin = Depends(get_current_admin),
+):
+    site = db.query(Website).filter(Website.id == website_id).first()
+    if not site:
+        raise HTTPException(status_code=404, detail="Website not found")
+    if data.get("name"):
+        site.name = data["name"]
+    if data.get("url"):
+        site.url = data["url"]
+    if data.get("platform"):
+        site.platform = data["platform"]
+    if data.get("status") is not None:
+        site.status = data["status"]
+    if data.get("userId"):
+        site.user_id = data["userId"]
+    db.commit()
+    db.refresh(site)
+    return {
+        "id": site.id,
+        "name": site.name,
+        "url": site.url,
+        "userId": site.user_id,
+        "platform": site.platform,
+        "status": site.status,
+    }
+
+
 @router.delete("/{website_id}")
 async def delete_website(
     website_id: str,

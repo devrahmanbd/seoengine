@@ -3,7 +3,7 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.db_models import User
+from app.core.db_models import User, Website, APIKey
 from app.core.auth import get_current_admin
 from app.core.auth import get_password_hash
 
@@ -45,6 +45,7 @@ async def list_users(
                 "subscriptionStatus": u.subscription_status,
                 "apiCallsUsed": u.api_calls_used,
                 "apiCallsLimit": u.api_calls_limit,
+                "openrouterKey": u.openrouter_key or "",
                 "websitesCount": len(u.websites) if u.websites else 0,
                 "createdAt": u.created_at.isoformat() if u.created_at else None,
             }
@@ -97,7 +98,8 @@ async def create_user(
         name=data.get("name"),
         password_hash=get_password_hash(data.get("password", "password")),
         plan=data.get("plan", "free"),
-        subscription_status=data.get("subscription_status", "active"),
+        subscription_status=data.get("subscription_status") or data.get("subscriptionStatus", "active"),
+        openrouter_key=data.get("openrouter_key") or None,
     )
     db.add(user)
     db.commit()
@@ -109,6 +111,7 @@ async def create_user(
         "name": user.name,
         "plan": user.plan,
         "subscriptionStatus": user.subscription_status,
+        "openrouterKey": user.openrouter_key or "",
     }
 
 
@@ -131,6 +134,12 @@ async def update_user(
         user.plan = data["plan"]
     if data.get("subscription_status"):
         user.subscription_status = data["subscription_status"]
+    elif data.get("subscriptionStatus"):
+        user.subscription_status = data["subscriptionStatus"]
+    if data.get("openrouter_key"):
+        user.openrouter_key = data["openrouter_key"]
+    elif data.get("openrouterKey") is not None:
+        user.openrouter_key = data["openrouterKey"]
     
     db.commit()
     db.refresh(user)
@@ -141,6 +150,7 @@ async def update_user(
         "name": user.name,
         "plan": user.plan,
         "subscriptionStatus": user.subscription_status,
+        "openrouterKey": user.openrouter_key or "",
     }
 
 
@@ -153,6 +163,12 @@ async def delete_user(
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # delete associated resources first
+    for site in user.websites:
+        db.delete(site)
+    for key in user.api_keys:
+        db.delete(key)
     
     db.delete(user)
     db.commit()

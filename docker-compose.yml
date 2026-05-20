@@ -34,6 +34,8 @@ services:
       REDIS_URL: redis://zenseo-redis:6379
       SECRET_KEY: ${SECRET_KEY:-zenseo-secret-key-change-in-production}
       ENVIRONMENT: ${ENVIRONMENT:-production}
+      ML_API_KEY: ${ML_API_KEY:-ml-secret-key-change-me}
+      ML_SERVICE_URL: http://ml-service:8000
     ports:
       - "8000:8000"
     depends_on:
@@ -45,6 +47,27 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    container_name: zenseo-ml
+    environment:
+      DATABASE_URL: postgresql://rahman:zenseo123@zenseo-postgres:5432/zenseo
+      ML_API_KEY: ${ML_API_KEY:-ml-secret-key-change-me}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          memory: 2G
+        limits:
+          memory: 4G
 
   frontend:
     build:

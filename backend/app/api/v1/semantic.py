@@ -1,11 +1,5 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
-
-from app.services.semantic import (
-    SemanticDB,
-    LoRASemanticAdapter,
-    CrossSiteAnalyzer,
-)
 
 router = APIRouter(prefix="/api/v1/semantic", tags=["semantic"])
 
@@ -19,30 +13,16 @@ class AdaptRequest(BaseModel):
     site_id: str
     query: str
 
-_semantic_db: SemanticDB | None = None
-_lora_adapter: LoRASemanticAdapter | None = None
-_cross_analyzer: CrossSiteAnalyzer | None = None
+
+def _get_db():
+    from app.services.semantic.db import SemanticDB
+    if not hasattr(_get_db, "_instance"):
+        _get_db._instance = SemanticDB(dimension=32)
+    return _get_db._instance
 
 
-def _get_db() -> SemanticDB:
-    global _semantic_db
-    if _semantic_db is None:
-        _semantic_db = SemanticDB(dimension=32)
-    return _semantic_db
-
-
-def _get_lora() -> LoRASemanticAdapter:
-    global _lora_adapter
-    if _lora_adapter is None:
-        _lora_adapter = LoRASemanticAdapter(_get_db(), rank=8, alpha=0.5)
-    return _lora_adapter
-
-
-def _get_cross() -> CrossSiteAnalyzer:
-    global _cross_analyzer
-    if _cross_analyzer is None:
-        _cross_analyzer = CrossSiteAnalyzer(_get_db(), min_sites=2)
-    return _cross_analyzer
+def _get_ml(request: Request):
+    return getattr(request.app.state, "ml_client", None)
 
 
 @router.get("/graph/{site_id}")
@@ -69,35 +49,70 @@ async def find_similar_sites(site_id: str, limit: int = Query(5, ge=1, le=20)):
 
 
 @router.post("/adapt")
-async def apply_lora_adapter(req: AdaptRequest):
-    lora = _get_lora()
-    ctx = await lora.adapt(req.site_id, req.query)
-    return ctx.to_dict()
+async def apply_lora_adapter(req: AdaptRequest, request: Request):
+    ml = _get_ml(request)
+    if ml and ml.enabled:
+        result = await ml.adapt(req.site_id, req.query)
+        if result:
+            return result
+    raise HTTPException(status_code=503, detail="ML service not available for LoRA adaptation")
 
 
 @router.get("/patterns")
-async def get_patterns(limit: int = Query(10, ge=1, le=50)):
-    cross = _get_cross()
-    patterns = await cross.find_patterns(limit=limit)
-    return [p.to_dict() for p in patterns]
+async def get_patterns(limit: int = Query(10, ge=1, le=50), request: Request = None):
+    if request:
+        ml = _get_ml(request)
+        if ml and ml.enabled:
+            from app.core.database import get_db as db_session
+            db = _get_db()
+            site_ids = await db.get_all_site_ids()
+            vectors = []
+            valid_ids = []
+            for sid in site_ids:
+                vec = await db.get_topic_vector(sid)
+                if vec:
+                    vectors.append(vec)
+                    valid_ids.append(sid)
+            if vectors:
+                clusters = await ml.cluster_vectors(vectors, valid_ids)
+                if clusters:
+                    result = []
+                    for cluster in clusters:
+                        site_entities = {}
+                        for sid in cluster:
+                            graph = await db.get_graph(sid)
+                            if graph:
+                                site_entities[sid] = [
+                                    {
+                                        "id": n.id,
+                                        "label": n.label,
+                                        "type": n.type,
+                                        "embedding": n.embedding or [],
+                                    }
+                                    for n in graph.nodes
+                                    if n.embedding
+                                ]
+                        patterns = await ml.find_shared_entities(cluster, site_entities)
+                        result.extend(patterns)
+                    return result[:limit]
+    return []
 
 
 @router.get("/patterns/{site_id}")
-async def get_site_patterns(site_id: str):
-    cross = _get_cross()
-    patterns = await cross.get_insights_for_site(site_id)
-    return [p.to_dict() for p in patterns]
+async def get_site_patterns(site_id: str, request: Request = None):
+    patterns = await get_patterns(limit=50, request=request)
+    site_patterns = [p for p in patterns if any(e in str(p) for e in [site_id])]
+    return site_patterns[:10]
 
 
 @router.get("/health")
-async def semantic_health():
+async def semantic_health(request: Request = None):
     db = _get_db()
-    lora = _get_lora()
-    cross = _get_cross()
     site_count = len(await db.get_all_site_ids())
+    ml = _get_ml(request) if request else None
+    ml_status = "connected" if ml and ml.enabled else "unavailable"
     return {
         "status": "healthy",
         "semantic_db": {"status": "connected", "sites": site_count, "dimension": db.dimension},
-        "lora_adapter": {"status": "ready", "rank": lora.rank, "alpha": lora.alpha},
-        "cross_site_analyzer": {"status": "initialized", "min_sites": cross.min_sites},
+        "ml_service": {"status": ml_status},
     }

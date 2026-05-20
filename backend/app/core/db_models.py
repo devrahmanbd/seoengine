@@ -20,6 +20,7 @@ class User(Base):
     subscription_status = Column(String, default="active")
     api_calls_used = Column(Integer, default=0)
     api_calls_limit = Column(Integer, default=1000)
+    openrouter_key = Column(String, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

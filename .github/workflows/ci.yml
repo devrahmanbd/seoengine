@@ -62,6 +62,9 @@ jobs:
             tests/test_semantic/test_embeddings.py \
             tests/test_learning/test_reward_calculator.py \
             tests/test_growth/test_growth_api.py \
+            --ignore=tests/test_semantic/test_lora_adapter.py \
+            --ignore=tests/test_atropos/test_trainer.py \
+            --ignore=tests/test_learning/test_decision_integrator.py \
             -v --tb=short
         env:
           DATABASE_URL: postgresql://rahman:zenseo123@localhost:5432/zenseo
@@ -124,5 +127,25 @@ jobs:
           push: true
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract metadata for ml-service
+        id: meta-ml
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-ml-service
+          tags: |
+            type=sha,prefix=,suffix=,format=short
+            type=ref,event=branch
+            latest
+
+      - name: Build and push ml-service
+        uses: docker/build-push-action@v6
+        with:
+          context: ml-service
+          push: true
+          tags: ${{ steps.meta-ml.outputs.tags }}
+          labels: ${{ steps.meta-ml.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

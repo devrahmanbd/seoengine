@@ -10,8 +10,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.auth import decode_access_token
 from app.services.hermes import HermesAgent, CommandResult
 from app.services.hermes.commands import register_all
-from app.services.semantic import SemanticDB, LoRASemanticAdapter
-
+from app.services.semantic import SemanticDB
 logger = logging.getLogger("hermes.api")
 
 router = APIRouter(prefix="/api/v1/repl", tags=["repl"])
@@ -20,16 +19,15 @@ _security = HTTPBearer(auto_error=False)
 
 _hermes: HermesAgent | None = None
 _semantic_db: SemanticDB | None = None
-_lora_adapter: LoRASemanticAdapter | None = None
 _startup_time = time.monotonic()
 
 
 def _ensure_initialized():
-    global _semantic_db, _lora_adapter, _hermes
-    if _hermes is None:
+    global _hermes, _semantic_db
+    if _semantic_db is None:
         _semantic_db = SemanticDB()
-        _lora_adapter = LoRASemanticAdapter(_semantic_db)
-        _hermes = HermesAgent(semantic_adapter=_lora_adapter)
+    if _hermes is None:
+        _hermes = HermesAgent()
         register_all(_hermes)
 
 
@@ -135,13 +133,6 @@ async def health() -> dict:
             checks["hermes_agent"] = agent_health
         except Exception as e:
             checks["hermes_agent"] = {"status": "unhealthy", "error": str(e)}
-
-    if _lora_adapter:
-        try:
-            adapter_health = await _lora_adapter.health()
-            checks["lora_adapter"] = adapter_health
-        except Exception as e:
-            checks["lora_adapter"] = {"status": "unhealthy", "error": str(e)}
 
     all_healthy = all(
         c.get("status") == "healthy" for c in checks.values()

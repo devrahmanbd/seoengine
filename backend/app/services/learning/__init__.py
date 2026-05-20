@@ -1,4 +1,3 @@
-from app.services.atropos.trainer import PPOTrainer
 from app.services.learning.data_collector import DataCollector
 from app.services.learning.decision_integrator import DecisionIntegrator
 from app.services.learning.feedback_loop import FeedbackLoop
@@ -11,7 +10,6 @@ __all__ = [
     "DecisionIntegrator",
     "FeedbackLoop",
     "GrowthScorer",
-    "PPOTrainer",
     "RewardCalculator",
     "TrainingPipeline",
 ]
