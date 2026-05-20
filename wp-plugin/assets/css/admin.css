@@ -1,0 +1,106 @@
+/* ZenSEO Admin CSS */
+
+.zenseo-dashboard, .zenseo-settings, .zenseo-keywords {
+    max-width: 1200px;
+}
+
+.zenseo-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.zenseo-card h2, .zenseo-card h3 {
+    margin-top: 0;
+    padding-top: 0;
+}
+
+.form-table th {
+    width: 200px;
+}
+
+.score-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.score-good { background: #d1fae5; color: #059669; }
+.score-medium { background: #fef3c7; color: #d97706; }
+.score-bad { background: #fee2e2; color: #dc2626; }
+
+.task-item {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+.task-high { border-left: 4px solid #dc2626; }
+.task-medium { border-left: 4px solid #d97706; }
+.task-low { border-left: 4px solid #059669; }
+
+.zenseo-tasks {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.nav-tab-wrapper {
+    margin-bottom: 20px;
+}
+
+.description {
+    color: #666;
+    font-size: 12px;
+}
+
+.ajax-loading {
+    opacity: 0.6;
+}
+
+/* Modal */
+.zenseo-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+}
+
+.zenseo-modal-content {
+    background: #fff;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 600px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.zenseo-close {
+    float: right;
+    font-size: 28px;
+    cursor: pointer;
+}
+
+/* Progress bar */
+.zenseo-progress {
+    height: 20px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.zenseo-progress-bar {
+    height: 100%;
+    background: #2271b1;
+    transition: width 0.3s;
+}

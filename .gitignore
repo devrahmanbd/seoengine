@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+*.pt
+*.pyc
+
+# Node
+node_modules/
+dist/
+
+# Environment
+.env
+!.env.example
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Generated
+graphify-out/
+
+# Runtime data (not committed)
+backend/data/episodic/
+backend/data/skills/
+backend/data/*.json
+
+# Bytecode
+__pycache__/
