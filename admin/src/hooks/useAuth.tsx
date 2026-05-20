@@ -21,12 +21,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token])
 
   const login = async (email: string, password: string) => {
-    console.log('Login function called with:', email)
     const formData = new URLSearchParams()
     formData.append('username', email)
     formData.append('password', password)
-    
-    console.log('Making request to:', 'http://localhost:8000/api/admin/v1/auth/login')
     
     const response = await axios.post('/api/admin/v1/auth/login', formData, {
       headers: { 
