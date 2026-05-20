@@ -3,7 +3,7 @@ Database seeding script for ZenSEO Admin
 Run: python seed.py
 """
 
-from app.core.database import SessionLocal, init_db
+from app.core.database import SessionLocal, init_db, get_engine
 from app.core.db_models import User, Website, APIKey, Admin
 from app.core.auth import get_password_hash
 import uuid
@@ -13,7 +13,7 @@ def seed():
     print("Initializing database...")
     init_db()
     
-    db = SessionLocal()
+    db = SessionLocal(bind=get_engine())
     
     # Check if admin exists
     existing_admin = db.query(Admin).first()
