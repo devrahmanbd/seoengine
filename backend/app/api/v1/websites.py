@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from uuid import uuid4
 
@@ -8,6 +9,24 @@ from app.core.db_models import Website
 from app.core.auth import get_current_admin
 
 router = APIRouter()
+
+class CreateWebsiteRequest(BaseModel):
+    model_config = {"populate_by_name": True}
+
+    user_id: str = Field(..., alias="userId", max_length=255)
+    url: Optional[str] = Field(None, max_length=2048)
+    name: Optional[str] = Field(None, max_length=255)
+    platform: Optional[str] = Field("wordpress")
+    status: Optional[str] = Field("connected")
+
+class UpdateWebsiteRequest(BaseModel):
+    model_config = {"populate_by_name": True}
+
+    user_id: Optional[str] = Field(None, alias="userId", max_length=255)
+    url: Optional[str] = Field(None, max_length=2048)
+    name: Optional[str] = Field(None, max_length=255)
+    platform: Optional[str] = Field(None)
+    status: Optional[str] = Field(None)
 
 
 @router.get("")
@@ -80,19 +99,16 @@ async def get_website(
 
 @router.post("")
 async def create_website(
-    data: dict,
+    data: CreateWebsiteRequest,
     db: Session = Depends(get_db),
     current_admin = Depends(get_current_admin),
 ):
-    user_id = data.get("user_id") or data.get("userId")
-    if not user_id:
-        raise HTTPException(status_code=422, detail="userId is required")
     site = Website(
-        user_id=user_id,
-        url=data.get("url"),
-        name=data.get("name") or data.get("url") or "New Website",
-        platform=data.get("platform", "wordpress"),
-        status=data.get("status", "connected"),
+        user_id=data.user_id,
+        url=data.url,
+        name=data.name or data.url or "New Website",
+        platform=data.platform,
+        status=data.status,
     )
     db.add(site)
     db.commit()
@@ -110,23 +126,23 @@ async def create_website(
 @router.put("/{website_id}")
 async def update_website(
     website_id: str,
-    data: dict,
+    data: UpdateWebsiteRequest,
     db: Session = Depends(get_db),
     current_admin = Depends(get_current_admin),
 ):
     site = db.query(Website).filter(Website.id == website_id).first()
     if not site:
         raise HTTPException(status_code=404, detail="Website not found")
-    if data.get("name"):
-        site.name = data["name"]
-    if data.get("url"):
-        site.url = data["url"]
-    if data.get("platform"):
-        site.platform = data["platform"]
-    if data.get("status") is not None:
-        site.status = data["status"]
-    if data.get("userId"):
-        site.user_id = data["userId"]
+    if data.name:
+        site.name = data.name
+    if data.url:
+        site.url = data.url
+    if data.platform:
+        site.platform = data.platform
+    if data.status is not None:
+        site.status = data.status
+    if data.user_id:
+        site.user_id = data.user_id
     db.commit()
     db.refresh(site)
     return {

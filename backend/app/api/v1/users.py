@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional, List
+from pydantic import BaseModel, Field, EmailStr
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -8,6 +9,26 @@ from app.core.auth import get_current_admin
 from app.core.auth import get_password_hash
 
 router = APIRouter()
+
+
+class CreateUserRequest(BaseModel):
+    model_config = {"populate_by_name": True}
+
+    email: str = Field(..., max_length=255)
+    name: Optional[str] = Field(None, max_length=255)
+    password: Optional[str] = Field(None)
+    plan: Optional[str] = Field("free")
+    subscription_status: Optional[str] = Field("active", alias="subscriptionStatus")
+    openrouter_key: Optional[str] = Field(None, alias="openrouterKey")
+
+class UpdateUserRequest(BaseModel):
+    model_config = {"populate_by_name": True}
+
+    email: Optional[str] = Field(None, max_length=255)
+    name: Optional[str] = Field(None, max_length=255)
+    plan: Optional[str] = Field(None)
+    subscription_status: Optional[str] = Field(None, alias="subscriptionStatus")
+    openrouter_key: Optional[str] = Field(None, alias="openrouterKey")
 
 
 @router.get("")
@@ -85,21 +106,21 @@ async def get_user(
 
 @router.post("")
 async def create_user(
-    data: dict,
+    data: CreateUserRequest,
     db: Session = Depends(get_db),
     current_admin: User = Depends(get_current_admin),
 ):
-    existing = db.query(User).filter(User.email == data.get("email")).first()
+    existing = db.query(User).filter(User.email == data.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already exists")
     
     user = User(
-        email=data.get("email"),
-        name=data.get("name"),
-        password_hash=get_password_hash(data.get("password", "password")),
-        plan=data.get("plan", "free"),
-        subscription_status=data.get("subscription_status") or data.get("subscriptionStatus", "active"),
-        openrouter_key=data.get("openrouter_key") or None,
+        email=data.email,
+        name=data.name,
+        password_hash=get_password_hash(data.password or "password"),
+        plan=data.plan,
+        subscription_status=data.subscription_status,
+        openrouter_key=data.openrouter_key,
     )
     db.add(user)
     db.commit()
@@ -118,7 +139,7 @@ async def create_user(
 @router.put("/{user_id}")
 async def update_user(
     user_id: str,
-    data: dict,
+    data: UpdateUserRequest,
     db: Session = Depends(get_db),
     current_admin: User = Depends(get_current_admin),
 ):
@@ -126,20 +147,16 @@ async def update_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    if data.get("email"):
-        user.email = data["email"]
-    if data.get("name"):
-        user.name = data["name"]
-    if data.get("plan"):
-        user.plan = data["plan"]
-    if data.get("subscription_status"):
-        user.subscription_status = data["subscription_status"]
-    elif data.get("subscriptionStatus"):
-        user.subscription_status = data["subscriptionStatus"]
-    if data.get("openrouter_key"):
-        user.openrouter_key = data["openrouter_key"]
-    elif data.get("openrouterKey") is not None:
-        user.openrouter_key = data["openrouterKey"]
+    if data.email:
+        user.email = data.email
+    if data.name:
+        user.name = data.name
+    if data.plan:
+        user.plan = data.plan
+    if data.subscription_status is not None:
+        user.subscription_status = data.subscription_status
+    if data.openrouter_key is not None:
+        user.openrouter_key = data.openrouter_key
     
     db.commit()
     db.refresh(user)
