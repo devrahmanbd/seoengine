@@ -26,7 +26,7 @@ async def list_websites(
     if user_id:
         query = query.filter(Website.user_id == user_id)
     if status:
-        query = query.filter(Website.connection_status == status)
+        query = query.filter(Website.status == status)
     if platform:
         query = query.filter(Website.platform == platform)
     if search:

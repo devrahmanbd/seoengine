@@ -126,8 +126,11 @@ async def update_api_key(
         key.rate_limit = data["rate_limit"]
     elif data.get("rateLimit") is not None:
         key.rate_limit = data["rateLimit"]
-    if data.get("is_active") is not None:
-        key.is_active = data["is_active"]
+    is_active = data.get("is_active")
+    if is_active is None:
+        is_active = data.get("isActive")
+    if is_active is not None:
+        key.is_active = str(is_active).lower() == "true"
     db.commit()
     db.refresh(key)
     return {"message": "API Key updated"}
