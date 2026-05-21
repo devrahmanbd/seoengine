@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from uuid import uuid4
 import secrets
@@ -10,6 +11,20 @@ from app.core.db_models import APIKey
 from app.core.auth import get_current_admin
 
 router = APIRouter()
+
+class CreateApiKeyRequest(BaseModel):
+    model_config = {"populate_by_name": True}
+
+    user_id: str = Field(..., alias="userId", max_length=255)
+    label: Optional[str] = Field("New Key", max_length=255)
+    rate_limit: Optional[int] = Field(1000, alias="rateLimit")
+
+class UpdateApiKeyRequest(BaseModel):
+    model_config = {"populate_by_name": True}
+
+    label: Optional[str] = Field(None, max_length=255)
+    rate_limit: Optional[int] = Field(None, alias="rateLimit")
+    is_active: Optional[bool] = Field(None, alias="isActive")
 
 
 def hash_key(key: str) -> str:
@@ -81,7 +96,7 @@ async def get_api_key(
 
 @router.post("")
 async def create_api_key(
-    data: dict,
+    data: CreateApiKeyRequest,
     db: Session = Depends(get_db),
     current_admin = Depends(get_current_admin),
 ):
@@ -89,15 +104,12 @@ async def create_api_key(
     key_prefix = key_value[:20]
     key_hash_value = hash_key(key_value)
     
-    user_id = data.get("user_id") or data.get("userId")
-    if not user_id:
-        raise HTTPException(status_code=422, detail="userId is required")
     new_key = APIKey(
-        label=data.get("label", "New Key"),
-        user_id=user_id,
+        label=data.label,
+        user_id=data.user_id,
         key_prefix=key_prefix,
         key_hash=key_hash_value,
-        rate_limit=data.get("rate_limit") or data.get("rateLimit", 1000),
+        rate_limit=data.rate_limit,
         is_active=True,
     )
     db.add(new_key)
@@ -113,24 +125,19 @@ async def create_api_key(
 @router.put("/{key_id}")
 async def update_api_key(
     key_id: str,
-    data: dict,
+    data: UpdateApiKeyRequest,
     db: Session = Depends(get_db),
     current_admin = Depends(get_current_admin),
 ):
     key = db.query(APIKey).filter(APIKey.id == key_id).first()
     if not key:
         raise HTTPException(status_code=404, detail="API Key not found")
-    if data.get("label"):
-        key.label = data["label"]
-    if data.get("rate_limit") is not None:
-        key.rate_limit = data["rate_limit"]
-    elif data.get("rateLimit") is not None:
-        key.rate_limit = data["rateLimit"]
-    is_active = data.get("is_active")
-    if is_active is None:
-        is_active = data.get("isActive")
-    if is_active is not None:
-        key.is_active = str(is_active).lower() == "true"
+    if data.label is not None:
+        key.label = data.label
+    if data.rate_limit is not None:
+        key.rate_limit = data.rate_limit
+    if data.is_active is not None:
+        key.is_active = data.is_active
     db.commit()
     db.refresh(key)
     return {"message": "API Key updated"}
