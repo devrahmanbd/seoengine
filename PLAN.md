@@ -64,6 +64,7 @@
 |----------|------|-----|-----|
 | 🟠 | No request body validation | All endpoints use `data: dict` — no type checking, no required field enforcement, no max-length limits | Replace every `data: dict` with a Pydantic `BaseModel`. Add string length limits (e.g., email max 255, url max 2048). |
 | 🟠 | SQL injection surface | Raw query params in filter/sort — `user_id`, `search`, etc. passed directly to ORM filters | Validate all query params as UUIDs where applicable. Add regex patterns. |
+| 🔴 | HMAC signature check fails when `client_secret` unset | `_verify_signature` returns False immediately — HMAC fallback for non-browser clients broken by default | Log warning at startup if `client_secret` is empty. Return clear 403 "HMAC auth not configured". |
 | 🟠 | No API-wide rate limiting | An attacker can hammer any endpoint without limit | Add per-IP rate limiting middleware (1000 req/min per IP, configurable) |
 | 🟡 | CORS too permissive | `ClientOriginMiddleware` may not cover all abuse vectors | Audit all allowed origins. Ensure production only allows the actual frontend domain. |
 | 🟡 | Error messages leak internals | Stack traces and internal paths can appear in 500 responses | Set `show_traceback=False` in production. Return generic "Internal server error". |
@@ -89,6 +90,10 @@
 | 🔴 | Endpoints return 500 instead of validation errors | All CRUD endpoints use `data: dict` — missing required fields, wrong types, FK violations all produce 500 | Pydantic request models on every POST/PUT. Consistent error format: `{"error": {"code": "...", "message": "...", "details": {...}}}` |
 | 🟠 | No request ID tracking | Errors can't be correlated across logs | Add middleware that generates `X-Request-ID` for every request, logs it, and returns it in response headers |
 | 🟠 | No pagination metadata consistency | Some endpoints return `meta.total`, some don't. Frontend can't render pagination reliably | Standardize all list endpoints to return `{"data": [...], "meta": {"total": int, "page": int, "limit": int, "totalPages": int}}` |
+| 🔴 | `Website.connection_status` column does not exist | Filter uses `Website.connection_status` but model has `status` — crashes on first website status filter | Change to `Website.status` in `websites.py:29` |
+| 🔴 | `_find_compose_dir` can't find compose file inside Docker | Searches `os.getcwd()` and parent — inside a container these paths don't contain `docker-compose.yml` | Mount compose file into container or use env var for path |
+| 🔴 | `docker_manager.py` treats Docker stderr as failure | Docker writes warnings to stderr even on success — false failure reports | Check `result.returncode == 0` instead of `not stderr` |
+| 🔴 | API key `isActive` string never properly handled | Frontend sends `isActive: "false"` string, backend checks wrong key `is_active` | Check both keys, coerce string: `str(raw).lower() == "true"` |
 | 🟡 | Health check is minimal | `/health` returns `{"status":"healthy"}` but doesn't verify DB or Redis connectivity | Add per-service health checks: database ping, Redis ping, ml-service reachability |
 | 🟡 | No graceful shutdown for background tasks | Training pipeline, growth tracker, feedback loop — all running as asyncio tasks. On shutdown, they're killed mid-operation. | Add proper cancellation: catch `asyncio.CancelledError`, save state, close DB connections. |
 | 🔵 | No OpenAPI docs for admin endpoints | `docs` endpoint shows auto-generated schema but endpoint grouping is messy | Organize routers with proper `tags`, `summary`, `description`. Add `responses` for error codes. |
@@ -125,6 +130,8 @@
 | Priority | What | Why | How |
 |----------|------|-----|-----|
 | 🟡 | No request deduplication | ManagementPage fires 5+ parallel GET requests on every mount. If user navigates away and back, all refire. | Add React Query (TanStack Query) for caching, dedup, stale-while-revalidate |
+| 🟠 | No pagination in frontend | Backend returns pagination metadata but frontend never sends page/limit — silently shows partial data for >100 records | Pass `page`/`limit` params, render pagination controls |
+| 🟠 | API key "delete" is actually deactivate — misleading UI | Frontend says "This action cannot be undone" with red Delete button, but only sets `is_active=False` | Either hard-delete or change UI to say "Revoke" |
 | 🟡 | No lazy loading for tabs | ML Service tab loads Docker info and ML status even if user never clicks it | Lazy-load tab content. Only fetch ML/docker data when ML tab is active. |
 | 🔵 | No virtualization for large tables | If a user has 10K websites, the DOM will have 10K rows | Use `@tanstack/react-virtual` for windowed rendering |
 
@@ -137,6 +144,9 @@
 | Priority | What | Why | How |
 |----------|------|-----|-----|
 | 🟠 | ml-service has no healthcheck in docker-compose.yml | Backend depends on ml-service but doesn't wait for it to be ready | Add healthcheck to ml-service (curl /health). Add depends_on condition in backend. |
+| 🟠 | ml-service missing PostgreSQL healthcheck condition | ml-service may start before Postgres is ready | Change `depends_on` to `condition: service_healthy` |
+| 🟠 | docker-compose memory limits use Swarm-only syntax | `deploy.resources.limits.memory` only honored in Docker Swarm | Use `mem_limit: 4G` at service level for compose v2 |
+| 🟠 | `deploy.sh` missing `ML_API_KEY` validation | If unset, ml-service runs without auth | Add `ML_API_KEY="${ML_API_KEY:?Set ML_API_KEY}"` to required vars |
 | 🟠 | dev-backend uses SECRET_KEY=dev-key in Makefile | Inconsistent with production key → token mismatch when switching contexts | Use `SECRET_KEY=$(shell openssl rand -hex 32)` in production commands, keep dev-key for dev only |
 | 🟠 | Frontend VITE_API_URL in production | In docker-compose, frontend uses `VITE_API_URL=http://backend:8000` but vite proxy only helps in dev — production build connects directly | In production Dockerfile, build with correct `VITE_API_URL` build arg. Or serve frontend from nginx that proxies /api to backend. |
 | 🟠 | deploy.sh doesn't validate env vars early | If SECRET_KEY or GITHUB_TOKEN is missing, user gets half-deployed broken state | Add pre-flight checks at the top of deploy.sh: check all required vars, check Docker is installed, check ports aren't in use |
@@ -180,40 +190,63 @@
 Ordered by impact. Do these before anything else:
 
 ```
-1. [🔴] Add Pydantic request models to all CRUD endpoints
-   → backend/app/api/v1/users.py, websites.py, api_keys.py
-   → Replace data: dict with CreateUser/UpdateUser/CreateWebsite/etc.
-   → Stops 500s from bad payloads
+ 0. [🔴] Fix Website.connection_status crash
+    → backend/app/api/v1/websites.py:29
+    → Change Website.connection_status to Website.status
 
-2. [🔴] Create initial Alembic migration
-   → backend: alembic init + initial revision
-   → Schema is version-controlled from this point
+ 1. [🔴] Fix API key isActive string-to-bool
+    → backend/app/api/v1/api_keys.py:129-132
+    → Check both is_active/isActive keys, coerce string to bool
 
-3. [🔴] Fix CI to not skip tests
-   → Add proper mocking so lora/trainer/decision_integrator tests pass
-   → Remove --ignore flags or document why they're skipped
+ 2. [🔴] Fix Docker stderr-as-failure
+    → backend/app/services/docker_manager.py:68,86,97
+    → Check result.returncode == 0 instead of not stderr
 
-4. [🟠] Add JWT refresh endpoint
-   → backend/app/api/v1/auth.py: /refresh
-   → frontend: interceptor tries refresh before redirecting to login
+ 3. [🔴] Fix _find_compose_dir for containerized backend
+    → backend/app/services/docker_manager.py:118-124
+    → Use env var for compose file path, document Docker socket mount
 
-5. [🟠] Add rate limiting on auth endpoints
-   → slowapi: 5 attempts/min/IP, 15min lockout
+ 4. [🔴] Add Pydantic request models to all CRUD endpoints
+    → backend/app/api/v1/users.py, websites.py, api_keys.py
+    → Replace data: dict with CreateUser/UpdateUser/CreateWebsite/etc.
+    → Stops 500s from bad payloads
 
-6. [🟠] Add input validation tests
-   → Tests for every CRUD endpoint: missing fields, wrong types, FK violations
+ 5. [🔴] Create initial Alembic migration
+    → backend: alembic init + initial revision
+    → Schema is version-controlled from this point
 
-7. [🟠] Frontend error boundaries + toast notifications
-   → Replace alert() with toasts
-   → Wrap routes in ErrorBoundary
+ 6. [🔴] Fix CI to not skip tests
+    → Add proper mocking so lora/trainer/decision_integrator tests pass
+    → Remove --ignore flags or document why they're skipped
 
-8. [🟠] Add proper health check
-   → /health checks DB + Redis + ml-service
-   → Docker healthchecks use this
+ 7. [🟠] Add JWT refresh endpoint
+    → backend/app/api/v1/auth.py: /refresh
+    → frontend: interceptor tries refresh before redirecting to login
 
-9. [🟡] Add frontend tests
-   → vitest + happy-dom
-   → Auth flow, ManagementPage render, form submission
+ 8. [🟠] Add rate limiting on auth endpoints
+    → slowapi: 5 attempts/min/IP, 15min lockout
+
+ 9. [🟠] Add input validation tests
+    → Tests for every CRUD endpoint: missing fields, wrong types, FK violations
+
+10. [🟠] Frontend error boundaries + toast notifications
+    → Replace alert() with toasts
+    → Wrap routes in ErrorBoundary
+
+11. [🟠] Add proper health check
+    → /health checks DB + Redis + ml-service
+    → Docker healthchecks use this
+
+12. [🟠] Fix HMAC client_secret warning
+    → Log startup warning if client_secret is empty
+    → Return clear 403 instead of silent fail
+
+13. [🟠] Fix deploy.sh ML_API_KEY validation
+    → Add ML_API_KEY to required vars check
+
+14. [🟡] Add frontend tests
+    → vitest + happy-dom
+    → Auth flow, ManagementPage render, form submission
 ```
 
 ---
@@ -236,10 +269,10 @@ Ordered by impact. Do these before anything else:
 
 | Layer | 🔴 Critical | 🟠 High | 🟡 Medium | 🔵 Low |
 |-------|-------------|---------|-----------|--------|
-| **Testing** | CI skips tests | Missing auth+cascade tests, no frontend tests | E2E tests | Performance tests |
-| **Security** | No refresh token, no password reset | No rate limiting, no token revocation, weak SECRET_KEY | CORS audit, no request size limit | Image signing |
-| **Backend** | Pydantic models missing | No request IDs, pagination inconsistency | Graceful shutdown, health check depth | OpenAPI polish |
+| **Testing** | CI skips tests, no tests on 3000 new lines | Missing auth+cascade tests, no frontend tests | E2E tests | Performance tests |
+| **Security** | HMAC client_secret broken by default | No rate limiting, no token revocation, weak SECRET_KEY, refresh token missing | CORS audit, no request size limit | Image signing |
+| **Backend** | connection_status crash, API key isActive broken, _find_compose_dir broken inside Docker, Docker stderr false failures | No request IDs, pagination inconsistency, Pydantic models missing | Graceful shutdown, health check depth | OpenAPI polish |
 | **Database** | No migrations | No pool config, no retry | Missing indexes, stale seed | Read replicas |
-| **Frontend** | — | No loading/empty/error states, alert() instead of toasts | No React Query, no lazy tabs | Virtual scrolling, keyboard shortcuts |
-| **Infra** | — | ml-service healthcheck, env validation, VITE_API_URL in prod | CI lint + frontend build, semver tags | Log rotation, backup |
+| **Frontend** | — | No loading/empty/error states, alert() toasts, no pagination, Revoke vs Delete misleading | No React Query, no lazy tabs | Virtual scrolling, keyboard shortcuts |
+| **Infra** | — | ml-service healthcheck, env validation, VITE_API_URL in prod, Swarm-only memory, missing ML_API_KEY | CI lint + frontend build, semver tags | Log rotation, backup |
 | **Observability** | — | Structured logging, metrics, real health check | Alerting setup | — |
