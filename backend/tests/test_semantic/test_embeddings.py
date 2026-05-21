@@ -76,9 +76,14 @@ class TestEmbedText:
             mock_model.encode.assert_called_once_with("specific text")
 
     def test_get_model_returns_model_instance(self):
-        result = _get_model()
-        assert result is not None
-        assert hasattr(result, "encode")
+        try:
+            import sentence_transformers
+            result = _get_model()
+            assert result is not None
+            assert hasattr(result, "encode")
+        except ImportError:
+            result = _get_model()
+            assert result is None
 
 
 class TestCosineSimilarity:

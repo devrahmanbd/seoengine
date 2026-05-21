@@ -164,7 +164,7 @@ export default function ManagementPage() {
     setNewKeyValue(null)
     if (tab === 'users') setForm({ name: item.name || '', email: item.email || '', plan: item.plan || 'free', subscriptionStatus: item.subscriptionStatus || 'active', openrouter_key: item.openrouterKey || '' })
     else if (tab === 'websites') setForm({ name: item.name || '', url: item.url || '', userId: item.userId || '', platform: item.platform || 'wordpress', status: item.status || 'connected' })
-    else setForm({ label: item.label || '', rateLimit: String(item.rateLimit || 1000), isActive: String(item.isActive ?? true) })
+    else setForm({ label: item.label || '', rateLimit: String(item.rateLimit || 1000), isActive: Boolean(item.isActive) ? 'true' : 'false' })
   }
 
   async function handleSave() {

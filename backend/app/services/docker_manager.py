@@ -7,19 +7,20 @@ logger = logging.getLogger(__name__)
 ML_CONTAINER_NAME = "zenseo-ml"
 
 
-def _docker_cmd(args: list[str]) -> tuple[str, str]:
+def _docker_cmd(args: list[str]) -> tuple[str, str, int]:
     try:
         result = subprocess.run(
             ["docker"] + args,
             capture_output=True,
             text=True,
             timeout=15,
+            check=False,
         )
-        return result.stdout.strip(), result.stderr.strip()
+        return result.stdout.strip(), result.stderr.strip(), result.returncode
     except FileNotFoundError:
-        return "", "docker command not found"
+        return "", "docker command not found", 127
     except subprocess.TimeoutExpired:
-        return "", "command timed out"
+        return "", "command timed out", 124
 
 
 def is_docker_available() -> bool:
@@ -31,7 +32,7 @@ def get_container_status() -> dict:
         return {"available": False, "error": "Docker not found on host"}
 
     try:
-        stdout, stderr = _docker_cmd(["ps", "-a", "--filter", f"name={ML_CONTAINER_NAME}", "--format", "{{.ID}}|{{.Status}}|{{.State}}|{{.Ports}}|{{.Image}}"])
+        stdout, stderr, returncode = _docker_cmd(["ps", "-a", "--filter", f"name={ML_CONTAINER_NAME}", "--format", "{{.ID}}|{{.Status}}|{{.State}}|{{.Ports}}|{{.Image}}"])
     except Exception as e:
         return {"available": False, "error": str(e)}
 
@@ -64,11 +65,11 @@ def start_container() -> dict:
     try:
         compose_dir = _find_compose_dir()
         if compose_dir:
-            stdout, stderr = _docker_cmd(["compose", "-f", "docker-compose.yml", "up", "-d", "ml-service"])
-            return {"success": True, "message": "Container started via Docker Compose"} if not stderr else {"success": False, "error": stderr}
+            stdout, stderr, returncode = _docker_cmd(["compose", "-f", "docker-compose.yml", "up", "-d", "ml-service"])
+            return {"success": True, "message": "Container started via Docker Compose"} if returncode == 0 else {"success": False, "error": stderr}
         else:
-            stdout, stderr = _docker_cmd(["start", ML_CONTAINER_NAME])
-            return {"success": True, "message": "Container started"} if not stderr else {"success": False, "error": stderr}
+            stdout, stderr, returncode = _docker_cmd(["start", ML_CONTAINER_NAME])
+            return {"success": True, "message": "Container started"} if returncode == 0 else {"success": False, "error": stderr}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -82,8 +83,8 @@ def stop_container() -> dict:
         return {"success": True, "message": "Container already stopped"}
 
     try:
-        stdout, stderr = _docker_cmd(["stop", ML_CONTAINER_NAME])
-        return {"success": True, "message": "Container stopped"} if not stderr else {"success": False, "error": stderr}
+        stdout, stderr, returncode = _docker_cmd(["stop", ML_CONTAINER_NAME])
+        return {"success": True, "message": "Container stopped"} if returncode == 0 else {"success": False, "error": stderr}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -93,8 +94,8 @@ def restart_container() -> dict:
         return {"success": False, "error": "Docker not found"}
 
     try:
-        stdout, stderr = _docker_cmd(["restart", ML_CONTAINER_NAME])
-        return {"success": True, "message": "Container restarted"} if not stderr else {"success": False, "error": stderr}
+        stdout, stderr, returncode = _docker_cmd(["restart", ML_CONTAINER_NAME])
+        return {"success": True, "message": "Container restarted"} if returncode == 0 else {"success": False, "error": stderr}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -108,7 +109,7 @@ def get_container_logs(tail: int = 100) -> dict:
         return {"available": True, "logs": [], "message": "Container not created yet"}
 
     try:
-        stdout, stderr = _docker_cmd(["logs", "--tail", str(tail), ML_CONTAINER_NAME])
+        stdout, stderr, returncode = _docker_cmd(["logs", "--tail", str(tail), ML_CONTAINER_NAME])
         lines = stdout.split("\n") if stdout else []
         return {"available": True, "logs": lines, "error": stderr or ""}
     except Exception as e:
@@ -117,8 +118,12 @@ def get_container_logs(tail: int = 100) -> dict:
 
 def _find_compose_dir() -> str | None:
     import os
+    env_path = os.environ.get("DOCKER_COMPOSE_PATH")
+    if env_path and os.path.isfile(env_path):
+        return os.path.dirname(env_path)
     candidates = [os.getcwd(), os.path.join(os.getcwd(), "..")]
     for d in candidates:
         if os.path.isfile(os.path.join(d, "docker-compose.yml")):
             return d
+    logger.warning("docker-compose.yml not found. Set DOCKER_COMPOSE_PATH if running in Docker.")
     return None
