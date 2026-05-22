@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { Bot, Search, Eye } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import axios from 'axios'
+import { Button } from '../components/Button'
+import { Card } from '../components/Card'
+import { Input } from '../components/Input'
 
 export default function AILogsPage() {
   const { token } = useAuth()
@@ -75,7 +78,7 @@ export default function AILogsPage() {
         ) : (
           <div className="grid grid-cols-4 gap-px bg-slate-200">
             {agents.map((agent) => (
-              <button
+              <Button variant="ghost"
                 key={agent.type}
                 className="p-4 text-left hover:bg-slate-50 bg-white"
               >
@@ -87,7 +90,7 @@ export default function AILogsPage() {
                   <p>{agent.runs24h} runs (24h)</p>
                   <p>Avg: {agent.avgTime}</p>
                 </div>
-              </button>
+              </Button>
             ))}
           </div>
         )}

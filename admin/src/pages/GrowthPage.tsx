@@ -1,3 +1,6 @@
+import { Button } from '../components/Button'
+import { Card } from '../components/Card'
+import { Input } from '../components/Input'
 import { useState } from 'react'
 import { TrendingUp, Search } from 'lucide-react'
 import { growthApi } from '../lib/api'
@@ -38,10 +41,10 @@ export default function GrowthPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Growth Dashboard</h1>
+        <h1 className="text-2xl font-bold text-textPrimary">Growth Dashboard</h1>
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-textSecondary" size={18} />
             <input
               type="text"
               placeholder="Website ID..."
@@ -51,14 +54,14 @@ export default function GrowthPage() {
               className="pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 w-72"
             />
           </div>
-          <button
+          <Button variant="ghost"
             onClick={loadGrowth}
             disabled={loading}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
           >
             <TrendingUp size={18} />
             {loading ? 'Loading...' : 'Analyze'}
-          </button>
+          </Button>
         </div>
       </div>
 

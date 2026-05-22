@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { Users, Globe, Key, Plus, Pencil, Trash2, X, Cpu, RefreshCw, Power, PowerOff } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import axios from 'axios'
+import { Button } from '../components/Button';
+import { Input } from '../components/Input';
 
 type Tab = 'users' | 'websites' | 'api-keys' | 'ml'
 
@@ -34,12 +36,12 @@ const TABS: { key: Tab; label: string; icon: typeof Users }[] = [
 function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+      <div className="bg-surface rounded-modal border border-border shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h2 className="text-lg font-display font-semibold text-textPrimary">{title}</h2>
+          <Button onClick={onClose} className="p-1 text-textSecondary hover:text-textPrimary rounded-lg">
             <X size={20} />
-          </button>
+          </Button>
         </div>
         <div className="px-6 py-4">{children}</div>
       </div>
@@ -50,44 +52,28 @@ function Modal({ title, children, onClose }: { title: string; children: React.Re
 function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onConfirm: () => void; onCancel: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onCancel}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
-        <p className="text-slate-900 mb-6">{message}</p>
+      <div className="bg-surface rounded-modal border border-border shadow-xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
+        <p className="text-textPrimary mb-6">{message}</p>
         <div className="flex justify-end gap-3">
-          <button onClick={onCancel} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
-          <button onClick={onConfirm} className="px-4 py-2 text-sm bg-error text-white rounded-lg hover:bg-error/90">Delete</button>
+          <Button onClick={onCancel} variant="ghost">Cancel</Button>
+          <Button onClick={onConfirm} variant="danger">Delete</Button>
         </div>
       </div>
     </div>
   )
 }
 
-function Input({ label, value, onChange, type = 'text', placeholder }: {
-  label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string
-}) {
-  return (
-    <div className="mb-4">
-      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary/50 bg-slate-50"
-      />
-    </div>
-  )
-}
 
 function Select({ label, value, onChange, options }: {
   label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[]
 }) {
   return (
     <div className="mb-4">
-      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-textPrimary mb-1">{label}</label>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary/50 bg-slate-50"
+        className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-primary/50 bg-background"
       >
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
@@ -248,10 +234,10 @@ export default function ManagementPage() {
   function getFormFields() {
     if (activeTab === 'users') return (
       <>
-        <Input label="Name" value={form.name || ''} onChange={v => setForm(f => ({ ...f, name: v }))} />
-        <Input label="Email" value={form.email || ''} onChange={v => setForm(f => ({ ...f, email: v }))} />
-        {formMode === 'create' && <Input label="Password" type="password" value={form.password || ''} onChange={v => setForm(f => ({ ...f, password: v }))} />}
-        <Input label="OpenRouter API Key" type="password" value={form.openrouter_key || ''} onChange={v => setForm(f => ({ ...f, openrouter_key: v }))} placeholder="sk-or-v1-..." />
+        <div className="mb-4"><Input label="Name" value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value } ))} /></div>
+        <div className="mb-4"><Input label="Email" value={form.email || ''} onChange={e => setForm(f => ({ ...f, email: e.target.value } ))} /></div>
+        {formMode === 'create' && <div className="mb-4"><Input label="Password" type="password" value={form.password || ''} onChange={e => setForm(f => ({ ...f, password: e.target.value } ))} /></div>}
+        <div className="mb-4"><Input label="OpenRouter API Key" type="password" value={form.openrouter_key || ''} onChange={e => setForm(f => ({ ...f, openrouter_key: e.target.value } ))} placeholder="sk-or-v1-..." /></div>
         <Select label="Plan" value={form.plan || 'free'} onChange={v => setForm(f => ({ ...f, plan: v }))} options={[
           { value: 'free', label: 'Free' }, { value: 'starter', label: 'Starter' }, { value: 'pro', label: 'Pro' }, { value: 'enterprise', label: 'Enterprise' }
         ]} />
@@ -262,8 +248,8 @@ export default function ManagementPage() {
     )
     if (activeTab === 'websites') return (
       <>
-        <Input label="Name" value={form.name || ''} onChange={v => setForm(f => ({ ...f, name: v }))} />
-        <Input label="URL" value={form.url || ''} onChange={v => setForm(f => ({ ...f, url: v }))} placeholder="https://example.com" />
+        <div className="mb-4"><Input label="Name" value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value } ))} /></div>
+        <div className="mb-4"><Input label="URL" value={form.url || ''} onChange={e => setForm(f => ({ ...f, url: e.target.value } ))} placeholder="https://example.com" /></div>
         <Select label="User" value={form.userId || ''} onChange={v => setForm(f => ({ ...f, userId: v }))} options={[
           { value: '', label: 'Select user...' },
           ...users.map(u => ({ value: u.id, label: `${u.name} (${u.email})` }))
@@ -279,12 +265,12 @@ export default function ManagementPage() {
     )
     return (
       <>
-        <Input label="Label" value={form.label || ''} onChange={v => setForm(f => ({ ...f, label: v }))} placeholder="e.g. Production API Key" />
+        <div className="mb-4"><Input label="Label" value={form.label || ''} onChange={e => setForm(f => ({ ...f, label: e.target.value } ))} placeholder="e.g. Production API Key" /></div>
         <Select label="User" value={form.userId || ''} onChange={v => setForm(f => ({ ...f, userId: v }))} options={[
           { value: '', label: 'Select user...' },
           ...users.map(u => ({ value: u.id, label: `${u.name} (${u.email})` }))
         ]} />
-        <Input label="Rate Limit (requests/day)" type="number" value={form.rateLimit || '1000'} onChange={v => setForm(f => ({ ...f, rateLimit: v }))} />
+        <div className="mb-4"><Input label="Rate Limit (requests/day)" type="number" value={form.rateLimit || '1000'} onChange={e => setForm(f => ({ ...f, rateLimit: e.target.value } ))} /></div>
         {formMode === 'edit' && (
           <Select label="Active" value={form.isActive || 'true'} onChange={v => setForm(f => ({ ...f, isActive: v }))} options={[
             { value: 'true', label: 'Active' }, { value: 'false', label: 'Inactive' }
@@ -294,34 +280,31 @@ export default function ManagementPage() {
     )
   }
 
-  if (loading) return <div className="p-8 text-center text-slate-500">Loading...</div>
+  if (loading) return <div className="p-8 text-center text-textSecondary">Loading...</div>
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900">Management</h1>
+        <h1 className="text-2xl font-display font-semibold text-textPrimary">Management</h1>
         {activeTab !== 'ml' && (
-          <button
-            onClick={() => openCreate(activeTab)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90"
-          >
+          <Button onClick={() => openCreate(activeTab)} className="flex items-center gap-2">
             <Plus size={18} /> Add {activeTab === 'users' ? 'User' : activeTab === 'websites' ? 'Website' : 'API Key'}
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-white rounded-xl border border-slate-200 p-1">
+      <div className="flex gap-1 bg-white rounded-xl border border-border p-1">
         {TABS.map(({ key, label, icon: Icon }) => (
-          <button
+          <Button
             key={key}
             onClick={() => { setActiveTab(key); resetForm() }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === key ? 'bg-primary text-white' : 'text-slate-600 hover:bg-slate-100'
+              activeTab === key ? 'bg-background text-primary shadow-sm' : 'text-textSecondary hover:bg-background hover:text-textPrimary'
             }`}
           >
             <Icon size={18} /> {label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -330,37 +313,37 @@ export default function ManagementPage() {
         <>
           <div className="grid grid-cols-3 gap-4">
             {userStats.map(({ label, value, color }) => (
-              <div key={label} className="bg-white rounded-xl p-4 border border-slate-200">
+              <div key={label} className="bg-white rounded-xl p-4 border border-border">
                 <p className={`text-2xl font-semibold ${color}`}>{value}</p>
-                <p className="text-sm text-slate-500">{label}</p>
+                <p className="text-sm text-textSecondary">{label}</p>
               </div>
             ))}
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-xl border border-border overflow-hidden">
             <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-background border-b border-border">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">User</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Plan</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Websites</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-textSecondary uppercase">User</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-textSecondary uppercase">Plan</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-textSecondary uppercase">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-textSecondary uppercase">Websites</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border">
                 {users.map(u => (
-                  <tr key={u.id} className="hover:bg-slate-50">
+                  <tr key={u.id} className="hover:bg-background">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-slate-900">{u.name}</p>
-                      <p className="text-sm text-slate-500">{u.email}</p>
+                      <p className="font-medium text-textPrimary">{u.name}</p>
+                      <p className="text-sm text-textSecondary">{u.email}</p>
                     </td>
-                    <td className="px-4 py-3"><span className="px-2 py-1 bg-slate-100 rounded-md text-xs font-medium text-slate-600 capitalize">{u.plan}</span></td>
-                    <td className="px-4 py-3"><span className={`px-2 py-1 rounded-md text-xs font-medium ${u.subscriptionStatus === 'active' ? 'bg-accent/10 text-accent' : 'bg-slate-100 text-slate-500'}`}>{u.subscriptionStatus}</span></td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{u.websitesCount || 0}</td>
+                    <td className="px-4 py-3"><span className="px-2 py-1 bg-background rounded-md text-xs font-medium text-textSecondary capitalize">{u.plan}</span></td>
+                    <td className="px-4 py-3"><span className={`px-2 py-1 rounded-md text-xs font-medium ${u.subscriptionStatus === 'active' ? 'bg-accent/10 text-accent' : 'bg-background text-textSecondary'}`}>{u.subscriptionStatus}</span></td>
+                    <td className="px-4 py-3 text-sm text-textSecondary">{u.websitesCount || 0}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => openEdit('users', u)} className="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-slate-100"><Pencil size={16} /></button>
-                        <button onClick={() => setDeleteTarget({ type: 'users', id: u.id, label: u.name })} className="p-1.5 text-slate-400 hover:text-error rounded-lg hover:bg-slate-100"><Trash2 size={16} /></button>
+                        <Button onClick={() => openEdit('users', u)} className="p-1.5 text-textSecondary hover:text-primary rounded-lg hover:bg-background"><Pencil size={16} /></Button>
+                        <Button onClick={() => setDeleteTarget({ type: 'users', id: u.id, label: u.name })} className="p-1.5 text-textSecondary hover:text-error rounded-lg hover:bg-background"><Trash2 size={16} /></Button>
                       </div>
                     </td>
                   </tr>
@@ -376,37 +359,37 @@ export default function ManagementPage() {
         <>
           <div className="grid grid-cols-3 gap-4">
             {websiteStats.map(({ label, value, color }) => (
-              <div key={label} className="bg-white rounded-xl p-4 border border-slate-200">
+              <div key={label} className="bg-white rounded-xl p-4 border border-border">
                 <p className={`text-2xl font-semibold ${color}`}>{value}</p>
-                <p className="text-sm text-slate-500">{label}</p>
+                <p className="text-sm text-textSecondary">{label}</p>
               </div>
             ))}
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-xl border border-border overflow-hidden">
             <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-background border-b border-border">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Website</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Platform</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">SEO Score</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-textSecondary uppercase">Website</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-textSecondary uppercase">Platform</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-textSecondary uppercase">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-textSecondary uppercase">SEO Score</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border">
                 {websites.map(w => (
-                  <tr key={w.id} className="hover:bg-slate-50">
+                  <tr key={w.id} className="hover:bg-background">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-slate-900">{w.name}</p>
-                      <p className="text-sm text-slate-500">{w.url}</p>
+                      <p className="font-medium text-textPrimary">{w.name}</p>
+                      <p className="text-sm text-textSecondary">{w.url}</p>
                     </td>
-                    <td className="px-4 py-3"><span className="px-2 py-1 bg-slate-100 rounded-md text-xs font-medium text-slate-600 capitalize">{w.platform}</span></td>
-                    <td className="px-4 py-3"><span className={`px-2 py-1 rounded-md text-xs font-medium capitalize ${w.status === 'connected' ? 'bg-accent/10 text-accent' : w.status === 'error' ? 'bg-error/10 text-error' : 'bg-slate-100 text-slate-500'}`}>{w.status}</span></td>
-                    <td className="px-4 py-3"><span className="text-lg font-semibold text-slate-900">{w.seoScore}</span></td>
+                    <td className="px-4 py-3"><span className="px-2 py-1 bg-background rounded-md text-xs font-medium text-textSecondary capitalize">{w.platform}</span></td>
+                    <td className="px-4 py-3"><span className={`px-2 py-1 rounded-md text-xs font-medium capitalize ${w.status === 'connected' ? 'bg-accent/10 text-accent' : w.status === 'error' ? 'bg-error/10 text-error' : 'bg-background text-textSecondary'}`}>{w.status}</span></td>
+                    <td className="px-4 py-3"><span className="text-lg font-display font-semibold text-textPrimary">{w.seoScore}</span></td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => openEdit('websites', w)} className="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-slate-100"><Pencil size={16} /></button>
-                        <button onClick={() => setDeleteTarget({ type: 'websites', id: w.id, label: w.name })} className="p-1.5 text-slate-400 hover:text-error rounded-lg hover:bg-slate-100"><Trash2 size={16} /></button>
+                        <Button onClick={() => openEdit('websites', w)} className="p-1.5 text-textSecondary hover:text-primary rounded-lg hover:bg-background"><Pencil size={16} /></Button>
+                        <Button onClick={() => setDeleteTarget({ type: 'websites', id: w.id, label: w.name })} className="p-1.5 text-textSecondary hover:text-error rounded-lg hover:bg-background"><Trash2 size={16} /></Button>
                       </div>
                     </td>
                   </tr>
@@ -422,36 +405,36 @@ export default function ManagementPage() {
         <>
           <div className="grid grid-cols-3 gap-4">
             {keyStats.map(({ label, value, color }) => (
-              <div key={label} className="bg-white rounded-xl p-4 border border-slate-200">
+              <div key={label} className="bg-white rounded-xl p-4 border border-border">
                 <p className={`text-2xl font-semibold ${color}`}>{value}</p>
-                <p className="text-sm text-slate-500">{label}</p>
+                <p className="text-sm text-textSecondary">{label}</p>
               </div>
             ))}
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-xl border border-border overflow-hidden">
             <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-background border-b border-border">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Label</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">API Key</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Rate Limit</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Usage</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-textSecondary uppercase">Label</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-textSecondary uppercase">API Key</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-textSecondary uppercase">Rate Limit</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-textSecondary uppercase">Usage</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-textSecondary uppercase">Status</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border">
                 {apiKeys.map(k => (
-                  <tr key={k.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3"><span className="font-medium text-slate-900">{k.label}</span></td>
-                    <td className="px-4 py-3"><code className="text-sm bg-slate-100 px-2 py-1 rounded font-mono">{k.keyPrefix}****</code></td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{k.rateLimit.toLocaleString()}/day</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{k.callsCount.toLocaleString()}</td>
-                    <td className="px-4 py-3"><span className={`px-2 py-1 rounded-md text-xs font-medium ${k.isActive ? 'bg-accent/10 text-accent' : 'bg-slate-100 text-slate-500'}`}>{k.isActive ? 'Active' : 'Inactive'}</span></td>
+                  <tr key={k.id} className="hover:bg-background">
+                    <td className="px-4 py-3"><span className="font-medium text-textPrimary">{k.label}</span></td>
+                    <td className="px-4 py-3"><code className="text-sm bg-background px-2 py-1 rounded font-mono">{k.keyPrefix}****</code></td>
+                    <td className="px-4 py-3 text-sm text-textSecondary">{k.rateLimit.toLocaleString()}/day</td>
+                    <td className="px-4 py-3 text-sm text-textSecondary">{k.callsCount.toLocaleString()}</td>
+                    <td className="px-4 py-3"><span className={`px-2 py-1 rounded-md text-xs font-medium ${k.isActive ? 'bg-accent/10 text-accent' : 'bg-background text-textSecondary'}`}>{k.isActive ? 'Active' : 'Inactive'}</span></td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => openEdit('api-keys', k)} className="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-slate-100"><Pencil size={16} /></button>
-                        <button onClick={() => setDeleteTarget({ type: 'api-keys', id: k.id, label: k.label })} className="p-1.5 text-slate-400 hover:text-error rounded-lg hover:bg-slate-100"><Trash2 size={16} /></button>
+                        <Button onClick={() => openEdit('api-keys', k)} className="p-1.5 text-textSecondary hover:text-primary rounded-lg hover:bg-background"><Pencil size={16} /></Button>
+                        <Button onClick={() => setDeleteTarget({ type: 'api-keys', id: k.id, label: k.label })} className="p-1.5 text-textSecondary hover:text-error rounded-lg hover:bg-background"><Trash2 size={16} /></Button>
                       </div>
                     </td>
                   </tr>
@@ -467,37 +450,36 @@ export default function ManagementPage() {
         <div className="space-y-6">
           {/* Status Cards */}
           <div className="grid grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl p-4 border border-slate-200">
-              <p className={`text-2xl font-semibold ${mlStatus?.available ? 'text-accent' : 'text-slate-400'}`}>
+            <div className="bg-white rounded-xl p-4 border border-border">
+              <p className={`text-2xl font-semibold ${mlStatus?.available ? 'text-accent' : 'text-textSecondary'}`}>
                 {mlStatus?.available ? 'Online' : 'Offline'}
               </p>
-              <p className="text-sm text-slate-500">API Reachable</p>
+              <p className="text-sm text-textSecondary">API Reachable</p>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-slate-200">
-              <p className={`text-2xl font-semibold ${dockerInfo?.container?.state === 'running' ? 'text-accent' : 'text-slate-400'}`}>
+            <div className="bg-white rounded-xl p-4 border border-border">
+              <p className={`text-2xl font-semibold ${dockerInfo?.container?.state === 'running' ? 'text-accent' : 'text-textSecondary'}`}>
                 {dockerInfo?.container ? dockerInfo.container.state : 'N/A'}
               </p>
-              <p className="text-sm text-slate-500">Container</p>
+              <p className="text-sm text-textSecondary">Container</p>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-slate-200">
-              <p className="text-2xl font-semibold text-slate-900">{dockerInfo?.container?.image ? dockerInfo.container.image.split('/').pop()?.split(':')[0] || 'ml-service' : '-'}</p>
-              <p className="text-sm text-slate-500">Image</p>
+            <div className="bg-white rounded-xl p-4 border border-border">
+              <p className="text-2xl font-display font-semibold text-textPrimary">{dockerInfo?.container?.image ? dockerInfo.container.image.split('/').pop()?.split(':')[0] || 'ml-service' : '-'}</p>
+              <p className="text-sm text-textSecondary">Image</p>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-slate-200">
-              <p className="text-2xl font-semibold text-slate-900">{mlStatus?.train_step ?? '-'}</p>
-              <p className="text-sm text-slate-500">Train Step</p>
+            <div className="bg-white rounded-xl p-4 border border-border">
+              <p className="text-2xl font-display font-semibold text-textPrimary">{mlStatus?.train_step ?? '-'}</p>
+              <p className="text-sm text-textSecondary">Train Step</p>
             </div>
           </div>
 
           {/* Container Control */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+          <div className="bg-white rounded-xl border border-border p-6">
+            <h3 className="text-lg font-display font-semibold text-textPrimary mb-4 flex items-center gap-2">
               <Cpu size={20} className="text-primary" /> Container Lifecycle
             </h3>
             <div className="space-y-4">
               <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={async () => {
+                <Button onClick={async () => {
                     if (!token) return; setContainerAction('start')
                     try {
                       const res = await axios.post('/api/admin/v1/ml/container/start', {}, authHeaders(token))
@@ -505,15 +487,11 @@ export default function ManagementPage() {
                       setDockerInfo(d.data)
                     } catch { alert('Failed to start container') }
                     setContainerAction(null)
-                  }}
-                  disabled={!!containerAction}
-                  className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 disabled:opacity-50"
-                >
+                  }} disabled={!!containerAction} variant="secondary" className="!bg-success/10 !text-success !border-success/20 hover:!bg-success/20 gap-2">
                   {containerAction === 'start' ? <RefreshCw size={16} className="animate-spin" /> : <Power size={16} />}
                   Start
-                </button>
-                <button
-                  onClick={async () => {
+                </Button>
+                <Button onClick={async () => {
                     if (!token) return; setContainerAction('stop')
                     try {
                       const res = await axios.post('/api/admin/v1/ml/container/stop', {}, authHeaders(token))
@@ -521,15 +499,11 @@ export default function ManagementPage() {
                       setDockerInfo(d.data)
                     } catch { alert('Failed to stop container') }
                     setContainerAction(null)
-                  }}
-                  disabled={!!containerAction}
-                  className="flex items-center gap-2 px-4 py-2 bg-error text-white rounded-lg text-sm font-medium hover:bg-error/90 disabled:opacity-50"
-                >
+                  }} disabled={!!containerAction} variant="danger" className="gap-2">
                   {containerAction === 'stop' ? <RefreshCw size={16} className="animate-spin" /> : <PowerOff size={16} />}
                   Stop
-                </button>
-                <button
-                  onClick={async () => {
+                </Button>
+                <Button onClick={async () => {
                     if (!token) return; setContainerAction('restart')
                     try {
                       const res = await axios.post('/api/admin/v1/ml/container/restart', {}, authHeaders(token))
@@ -538,15 +512,11 @@ export default function ManagementPage() {
                       setDockerInfo(d.data)
                     } catch { alert('Failed to restart container') }
                     setContainerAction(null)
-                  }}
-                  disabled={!!containerAction}
-                  className="flex items-center gap-2 px-4 py-2 bg-warning text-white rounded-lg text-sm font-medium hover:bg-warning/90 disabled:opacity-50"
-                >
+                  }} disabled={!!containerAction} variant="secondary" className="!bg-warning/10 !text-warning !border-warning/20 hover:!bg-warning/20 gap-2">
                   <RefreshCw size={16} className={containerAction === 'restart' ? 'animate-spin' : ''} />
                   Restart
-                </button>
-                <button
-                  onClick={async () => {
+                </Button>
+                <Button onClick={async () => {
                     if (!token) return; setLogsLoading(true)
                     try {
                       const res = await axios.get('/api/admin/v1/ml/container/logs?tail=100', authHeaders(token))
@@ -554,19 +524,19 @@ export default function ManagementPage() {
                     } catch { alert('Failed to fetch logs') }
                     setLogsLoading(false)
                   }}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-textPrimary bg-background rounded-lg hover:bg-slate-200"
                 >
                   <RefreshCw size={16} className={logsLoading ? 'animate-spin' : ''} />
                   Fetch Logs
-                </button>
+                </Button>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-background rounded-lg">
                 <div>
-                  <p className="font-medium text-slate-900">ML Service Toggle</p>
-                  <p className="text-sm text-slate-500">Enable/disable ML client in backend</p>
+                  <p className="font-medium text-textPrimary">ML Service Toggle</p>
+                  <p className="text-sm text-textSecondary">Enable/disable ML client in backend</p>
                 </div>
-                <button
+                <Button
                   onClick={async () => {
                     if (!token) return; setMlToggling(true)
                     try {
@@ -574,27 +544,22 @@ export default function ManagementPage() {
                       setMlStatus((prev: any) => ({ ...prev, available: res.data.enabled }))
                     } catch { alert('Failed to toggle') }
                     setMlToggling(false)
-                  }}
-                  disabled={mlToggling}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${
-                    mlStatus?.available ? 'bg-error/10 text-error hover:bg-error/20' : 'bg-accent/10 text-accent hover:bg-accent/20'
-                  }`}
-                >
+                  }} disabled={mlToggling} variant={mlStatus?.available ? "danger" : "primary"} className="gap-2">
                   {mlToggling ? <RefreshCw size={16} className="animate-spin" /> : mlStatus?.available ? <PowerOff size={16} /> : <Power size={16} />}
                   {mlStatus?.available ? 'Disable Client' : 'Enable Client'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
 
           {/* Components */}
           {mlStatus?.embeddings_loaded !== undefined && (
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">ML Components</h3>
+            <div className="bg-white rounded-xl border border-border p-6">
+              <h3 className="text-sm font-semibold text-textSecondary uppercase tracking-wider mb-3">ML Components</h3>
               <div className="flex flex-wrap gap-2">
                 {['trainer', 'lora', 'cross_site', 'embeddings'].map(c => (
                   <span key={c} className={`px-3 py-1.5 rounded-md text-sm font-medium ${
-                    mlStatus?.[`${c}_loaded`] ? 'bg-accent/10 text-accent' : 'bg-slate-100 text-slate-400'
+                    mlStatus?.[`${c}_loaded`] ? 'bg-accent/10 text-accent' : 'bg-background text-textSecondary'
                   }`}>
                     {c} {mlStatus?.[`${c}_loaded`] ? '✓' : '✗'}
                   </span>
@@ -605,31 +570,31 @@ export default function ManagementPage() {
 
           {/* Container Info */}
           {dockerInfo?.container && (
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Container Details</h3>
+            <div className="bg-white rounded-xl border border-border p-6">
+              <h3 className="text-sm font-semibold text-textSecondary uppercase tracking-wider mb-3">Container Details</h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><span className="text-slate-500">Container ID:</span> <span className="font-mono text-slate-900">{dockerInfo.container.id?.slice(0, 12)}</span></div>
-                <div><span className="text-slate-500">Status:</span> <span className="text-slate-900">{dockerInfo.container.status}</span></div>
-                <div><span className="text-slate-500">Image:</span> <span className="text-slate-900">{dockerInfo.container.image}</span></div>
-                <div><span className="text-slate-500">Ports:</span> <span className="text-slate-900">{dockerInfo.container.ports || '-'}</span></div>
+                <div><span className="text-textSecondary">Container ID:</span> <span className="font-mono text-textPrimary">{dockerInfo.container.id?.slice(0, 12)}</span></div>
+                <div><span className="text-textSecondary">Status:</span> <span className="text-textPrimary">{dockerInfo.container.status}</span></div>
+                <div><span className="text-textSecondary">Image:</span> <span className="text-textPrimary">{dockerInfo.container.image}</span></div>
+                <div><span className="text-textSecondary">Ports:</span> <span className="text-textPrimary">{dockerInfo.container.ports || '-'}</span></div>
               </div>
             </div>
           )}
 
           {/* Container Logs */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Container Logs</h3>
+          <div className="bg-white rounded-xl border border-border overflow-hidden">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-textSecondary uppercase tracking-wider">Container Logs</h3>
               <div className="flex gap-2">
-                <button onClick={() => setMlLogs([])} className="text-xs text-slate-400 hover:text-slate-600">Clear</button>
+                <Button onClick={() => setMlLogs([])} className="text-xs text-textSecondary hover:text-textPrimary">Clear</Button>
               </div>
             </div>
-            <div className="bg-slate-950 p-4 max-h-64 overflow-y-auto font-mono text-xs leading-relaxed">
+            <div className="bg-[#1E1E1E] p-4 max-h-64 overflow-y-auto font-mono text-xs leading-relaxed">
               {mlLogs.length === 0 ? (
-                <p className="text-slate-500 italic">Click "Fetch Logs" to view container output</p>
+                <p className="text-textSecondary italic">Click "Fetch Logs" to view container output</p>
               ) : (
                 mlLogs.map((line, i) => (
-                  <div key={i} className="text-slate-300 hover:text-white transition-colors">
+                  <div key={i} className="text-[#A1A1AA] hover:text-surface transition-colors">
                     {line || <br />}
                   </div>
                 ))
@@ -638,7 +603,7 @@ export default function ManagementPage() {
           </div>
 
           <div className="flex items-center justify-end">
-            <button
+            <Button
               onClick={async () => {
                 if (!token) return
                 const [ml, docker] = await Promise.all([
@@ -651,7 +616,7 @@ export default function ManagementPage() {
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20"
             >
               <RefreshCw size={16} /> Refresh All
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -662,17 +627,17 @@ export default function ManagementPage() {
           {newKeyValue ? (
             <div>
               <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-sm font-medium text-amber-800 mb-2">Copy this key now. You won't see it again.</p>
+                <p className="text-sm font-medium text-warning mb-2">Copy this key now. You won't see it again.</p>
                 <code className="block text-xs bg-white p-3 rounded border border-amber-200 font-mono break-all select-all">{newKeyValue}</code>
               </div>
-              <button onClick={resetForm} className="w-full px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90">Done</button>
+              <Button onClick={resetForm} className="w-full px-4 py-2 bg-background text-primary shadow-sm rounded-lg text-sm font-medium hover:bg-primary/90">Done</Button>
             </div>
           ) : (
             <>
               {getFormFields()}
               <div className="flex justify-end gap-3 mt-4">
-                <button onClick={resetForm} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
-                <button onClick={handleSave} className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90">Save</button>
+                <Button onClick={resetForm} className="px-4 py-2 text-sm text-textSecondary hover:bg-background hover:text-textPrimary rounded-lg">Cancel</Button>
+                <Button onClick={handleSave} className="px-4 py-2 text-sm bg-background text-primary shadow-sm rounded-lg hover:bg-primary/90">Save</Button>
               </div>
             </>
           )}

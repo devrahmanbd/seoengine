@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { Loader2 } from 'lucide-react'
+import { Button } from '../components/Button'
+import { Card } from '../components/Card'
+import { Input } from '../components/Input'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -31,15 +34,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-slate-800 rounded-2xl p-8 shadow-xl">
+        <Card className="p-8 shadow-xl">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-white font-bold text-2xl">Z</span>
+            <div className="w-16 h-16 bg-primary rounded-card flex items-center justify-center mx-auto mb-4">
+              <span className="text-surface font-bold text-2xl">Z</span>
             </div>
-            <h1 className="text-2xl font-semibold text-white">ZenSEO Admin</h1>
-            <p className="text-slate-400 mt-2">Sign in to your account</p>
+            <h1 className="text-2xl font-display font-semibold text-textPrimary">ZenSEO Admin</h1>
+            <p className="text-textSecondary mt-2">Sign in to your account</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -49,39 +52,11 @@ export default function LoginPage() {
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-primary"
-                placeholder="admin@zenseo.ai"
-                required
-              />
-            </div>
+            <Input label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@zenseo.ai" required />
 
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-primary"
-                placeholder="••••••••"
-                required
-              />
-            </div>
+            <Input label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-primary hover:bg-primary-hover text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-            >
+            <Button type="submit" disabled={loading} className="w-full h-[44px] mt-2">
               {loading ? (
                 <>
                   <Loader2 className="animate-spin" size={20} />
@@ -90,9 +65,9 @@ export default function LoginPage() {
               ) : (
                 'Sign In'
               )}
-            </button>
+            </Button>
           </form>
-        </div>
+        </Card>
       </div>
     </div>
   )

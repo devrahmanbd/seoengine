@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { Key, Plus, Trash2, Copy, Search } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import axios from 'axios'
+import { Button } from '../components/Button'
+import { Card } from '../components/Card'
+import { Input } from '../components/Input'
 
 interface ApiKey {
   id: string
