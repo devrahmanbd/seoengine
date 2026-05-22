@@ -2,16 +2,13 @@ import { useState, useEffect } from 'react'
 import { Users as UsersIcon, Plus, MoreVertical, Search } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import axios from 'axios'
-import { Button } from '../components/Button'
-import { Card } from '../components/Card'
-import { Input } from '../components/Input'
 
 interface User {
   id: string
   name: string
   email: string
   plan: string
-  subscriptionStatus: string
+  status: string
   apiCallsUsed: number
   apiCallsLimit: number
   websitesCount: number
@@ -52,7 +49,7 @@ export default function UsersPage() {
     return colors[plan] || colors.free
   }
 
-  const getStatusColor = (subscriptionStatus: string) => {
+  const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       active: 'bg-accent/10 text-accent',
       inactive: 'bg-slate-100 text-slate-500',
@@ -154,9 +151,9 @@ export default function UsersPage() {
                   <td className="px-4 py-3 text-sm text-slate-600">{user.websitesCount || 0}</td>
                   <td className="px-4 py-3 text-sm text-slate-500">{user.createdAt?.split('T')[0] || '-'}</td>
                   <td className="px-4 py-3">
-                    <Button variant="ghost" className="p-1 text-slate-400 hover:text-slate-600">
+                    <button className="p-1 text-slate-400 hover:text-slate-600">
                       <MoreVertical size={18} />
-                    </Button>
+                    </button>
                   </td>
                 </tr>
               ))}

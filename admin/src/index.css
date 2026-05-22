@@ -1,20 +1,13 @@
-@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --color-primary: #6366F1;
-  --color-background: #FAFAFA;
-  --color-surface: #FFFFFF;
-  --color-text-primary: #0A0A0A;
-  --color-text-secondary: #6B6B6B;
-  --color-border: #E8E8EC;
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-error: #EF4444;
+  --primary: #4F46E5;
+  --primary-hover: #4338CA;
+  --accent: #10B981;
+  --warning: #F59E0B;
+  --error: #F43F5E;
 }
 
 * {
@@ -22,9 +15,9 @@
 }
 
 body {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  background-color: var(--color-background);
-  color: var(--color-text-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #F8FAFC;
+  color: #0F172A;
   margin: 0;
   -webkit-font-smoothing: antialiased;
 }
